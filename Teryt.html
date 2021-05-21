@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teryt</title>
+    <style>
+        div {
+            float: left;
+        }
+        .woj{
+            font-weight: 700;
+            font-size: larger;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="cities"></div>
+
+<script>
+    let xhttp = new XMLHttpRequest()
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            loaded(xhttp.responseXML)
+        }
+    }
+    xhttp.open("GET", "teryt.xml", true)
+    xhttp.send();
+
+    let teryt
+
+    function find(path, onlyOne = false){
+        let tab = []
+        let  nodes = teryt.evaluate(path, teryt, null, XPathResult.ANY_TYPE, null)
+        let  result = nodes.iterateNext()
+
+        if(onlyOne)
+            return result.nodeValue
+
+
+        while (result) {
+            tab.push(result.nodeValue)
+            result = nodes.iterateNext()
+        } 
+        return tab
+    }
+
+    function loaded(xml){
+        teryt = xml
+        showProvinces()
+        if (!teryt.evaluate)
+            console.error('browserIncompatible')
+    }
+
+
+    function showProvinces() {
+
+        let provList = document.createElement('ul')
+        let provs = find('//NAZWA_DOD[.="województwo"]/../NAZWA/text()')
+
+        for(let i of provs){
+            let li = document.createElement('li')
+            li.innerText = i
+            li.className = 'woj'
+            li.onclick = e => showCities(i)
+
+            provList.appendChild(li)
+        }
+        document.getElementById("root").appendChild(provList)
+    }
+
+    function showCities(provName){
+        let cityTypes = [
+            'miasto na prawach powiatu',
+            'miasto stołeczne',
+            'miasto'
+        ]
+
+        let provNum = find('//NAZWA[.="'+provName+'"]/../WOJ/text()', true)
+        let cities = []
+
+        for(let i of cityTypes)
+            cities = cities.concat(find('//WOJ[.="'+provNum+'"]/../NAZWA_DOD[.="'+i+'"]/../NAZWA/text()'))
+
+        
+        let cityList = document.createElement('ul')
+
+        for(let i of cities){
+            let li = document.createElement('li')
+            li.innerText = i
+            li.onclick = e => showCities(i)
+
+            cityList.appendChild(li)
+        }
+
+        let div = document.getElementById("cities")
+        div.innerHTML = ""
+        div.appendChild(cityList)
+    }
+</script>
+</body>
+</html>
